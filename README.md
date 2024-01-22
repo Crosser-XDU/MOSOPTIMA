@@ -1,3 +1,5 @@
+**This is code repository for algorithm MOSOPTIMA**:smiley:
+
 ### Run The Code
 
 ```
@@ -21,6 +23,12 @@ python MAB_Simulation.py --variance_list 0.16
 **Read_result.py :** Read the results and write all the result into a file
 
 **Exp_multiArm :** Record the results
+
+### Result_Figure
+
+![]()
+![]()
+![]()
 
 
 
