@@ -26,9 +26,9 @@ python MAB_Simulation.py --variance_list 0.16
 
 ### Result_Figure
 
-![]()
-![]()
-![]()
+![Num_Arm](Result/sim_gauss_var_numarm.pdf)
+![Num_Dimension](Result/sim_gauss_var_numd.pdf)
+![Reward_Gap](Result/sim_5arm_gauss_var_sigma.pdf)
 
 
 
