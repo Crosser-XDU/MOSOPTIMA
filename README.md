@@ -25,6 +25,6 @@ python MAB_Simulation.py --variance_list 0.16
 **Exp_multiArm :** Record the results
 
 ### Result_Figure
-<a href="Result/sim_gauss_var_numarm.pdf" target="_blank">PDF.</a>
-<a href="Result/sim_gauss_var_numd.pdf" target="_blank">PDF.</a>
-<a href="Result/sim_5arm_gauss_var_sigma.pdf" target="_blank">PDF.</a>
+![Num_Arm](Result/Num_Arm.jpeg)
+![Num_Dimension](Result/Num_Dimension.jpeg)
+![Reward_Gap](Result/Reward_Gap.jpeg)
