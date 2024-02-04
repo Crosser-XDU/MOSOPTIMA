@@ -123,7 +123,7 @@ class RealArms():
         else:
             indices = np.random.choice(self.mincnt, size=total_user_each_arm, replace=False)
             for i in range(self.num_arm):
-                arms.append(RealArm(i, self.reward_type, self.num_dimension, self.means[i], self.vars[i], self.arms_rewards[i][:, indices]))
+                arms.append(RealArm(i, self.reward_type, self.num_dimension, self.means[i], self.vars[i], self.arms_rewards[i][indices, :]))
             return arms
 
 
