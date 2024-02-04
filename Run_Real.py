@@ -19,7 +19,7 @@ def Run_Real(args, arms):
 
     epsilon = args.epsilon # EG
     fixed_ratio = args.TS_fixed_ratio # TS
-     
+
     stop_rule = args.stop_rule # SPRT, t-test, PSI_Rule, esSR
     MAB_alg = args.MAB_alg # Elimination, TS, UCB, PSI, US, EG, AB
     reward_type = args.reward_type # gauss
@@ -27,17 +27,17 @@ def Run_Real(args, arms):
     Exp = args.Exp # AA, AB
     alpha, beta = args.alpha, args.beta
 
-    fname = args.fname
+    # fname = args.fname
     objectives = args.objectives
 
     #create real arms
     num_arm = arms.num_arm
     num_d = arms.num_dimension
     bayesian_mean = np.array(arms.gap_mean)
-    bayesian_variance = np.array(arms.gap_var)  
+    bayesian_variance = np.array(arms.gap_var)
     variance_set = arms.vars
     mean_set = arms.means
-    num_user = int((num_arm*total_user_each_arm)/num_epoch)   
+    num_user = int((num_arm*total_user_each_arm)/num_epoch)
     if objectives != None:
         num_d = len(objectives)
         bayesian_mean = np.array(arms.gap_mean[objectives])
@@ -77,8 +77,8 @@ def Run_Real(args, arms):
     #store the flag of every arm for SPRT algorithm(1 for dominate, 0 for be dominated, -1 for not sure)
     Flag = -np.ones((num_arm, num_arm))#arm-arm ndarray
     Flag_set = -np.ones((num_arm, num_arm, num_d))#dimension-dimension ndarray
-    
-    #create environment for simulation 
+
+    #create environment for simulation
     use_sf = True if stop_rule == 'sf_SPRT' else False
 
     #get the truly optimal set
@@ -87,11 +87,11 @@ def Run_Real(args, arms):
 
     if stop_rule == 'sf_SPRT':
         A_star = compute_optimal_set_sf(arm_set, scalarization_function)
-    
+
     #compute the delta value of every arm for computing the intananeous regret
-    Delta_Parote = compute_delta_value(A_star, arm_set, sf=scalarization_function, stop_rule=stop_rule)#list                 
+    Delta_Parote = compute_delta_value(A_star, arm_set, sf=scalarization_function, stop_rule=stop_rule)#list
     print("Delta_Parote:", Delta_Parote)
-    
+
     #initialization for PSI algorithm
     A = [i for i in range(num_arm)]
     P = []
@@ -110,7 +110,7 @@ def Run_Real(args, arms):
             Regret = 0
             arm_set = arms.getarms(objectives, total_user_each_arm)
             env = Environment(Delta_min, bayesian_mean, bayesian_variance, arms=arm_set, num_user=num_user, final_epoch=num_epoch, stop_rule=stop_rule, use_sf=use_sf, scalarization_function=scalarization_function)
-            
+
             #simulation of searching in the multi-objective space
             if stop_rule != 'esSR':
 
@@ -130,8 +130,8 @@ def Run_Real(args, arms):
                         Flag = env.T_test(real_variance = variance_set, current_epoch = epoch, test_type = test_type)
                     elif stop_rule == 'PSI_Rule':
                         A, P = env.PSI(epsilon = 0.0, delta = 0.1, A = A, P = P, real_variance = variance_set)
-                    
-                    Active_arm_index = [arm_id for arm_id in range(num_arm)] 
+
+                    Active_arm_index = [arm_id for arm_id in range(num_arm)]
                     Active_arm_index = np.delete(Active_arm_index, np.where(Flag == 1)[1]).tolist()
 
 
@@ -172,7 +172,7 @@ def Run_Real(args, arms):
                                 else:
                                     Type_I_error_count += 1
                                     Type_II_error_count += 1
-                                
+
                     elif env.Return_type == 2:
                         Accept_H1_butNotOpt +=1
 
@@ -211,7 +211,7 @@ def Run_Real(args, arms):
                 for arm in range(num_arm):
                     if Active_arm_index_fc[np.isin(Active_arm_index_fc, test_elements=[arm])].size != 0:
                         Optimal_set.append(arm)
-                
+
                 if Optimal_set == A_star:
                     Find_truely_opts += 1
                     #user observation for success find
@@ -222,13 +222,13 @@ def Run_Real(args, arms):
 
                 #user observation for every simulation
                 num_user = 1
-                epoch = user_observation - 1 
-            
+                epoch = user_observation - 1
+
             total_sample_epochs.append(epoch+1)
             Regret_all.append(Regret)
 
             f.write("\nFind truely optimal:"+str(Find_truely_opts)+"; AcceptH1andFindOpt: "+str(Accept_H1_and_FindOpt)+"; AcceptH0: "+str(Accept_H0)+"; AcceptH1butNotFindOpt: "+str(Accept_H1_butNotOpt))
-            f.write("\nSum sample epochs before stop:"+str(sum(sample_epochs)) +"; Sum total sample epochs:"+str(sum(total_sample_epochs))+"; Active Arm:"+str(np.sort(Active_arm_index))+"; Optimal Arm:"+str(A_star))    
+            f.write("\nSum sample epochs before stop:"+str(sum(sample_epochs)) +"; Sum total sample epochs:"+str(sum(total_sample_epochs))+"; Active Arm:"+str(np.sort(Active_arm_index))+"; Optimal Arm:"+str(A_star))
             if (run+1)%100 == 0:
                 f.write("\nPower="+ str(Find_truely_opts/((run+1))) + "; Averaged Sample size = "+ str(sum(sample_epochs)/Find_truely_opts)+ "; Averaged user observations per arm = "+ str(sum(sample_epochs)*num_user/(Find_truely_opts*num_arm)) + " ;Regret = " + str(sum(Regret_all)/(sum(total_sample_epochs)*num_user)))
                 f.write("\nType I error ratio:"+str(Type_I_error_count / Accept_H1_and_FindOpt)+"; Type II error count:"+str(Type_II_error_count / Accept_H1_and_FindOpt))

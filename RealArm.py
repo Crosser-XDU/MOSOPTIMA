@@ -1,8 +1,12 @@
 from Arm import Arm
+import os
 import numpy as np
 import pandas as pd
+import pdb
 import time
 from tqdm import tqdm
+from real_data.meta_data import expt_metadatas
+from multiprocessing import Pool
 
 def aggregate_numerator(df, metricid2dimen):
     df = df.reset_index(drop=True)  # Reset index
@@ -12,6 +16,9 @@ def aggregate_numerator(df, metricid2dimen):
     return pd.DataFrame({
         "numerator": [numerator]
     })
+
+def pop_std(x):
+    return x.std(ddof=0)
 
 class RealArm(Arm):
     def __init__(self,arm_id, reward_type, D, mean_list, variance_list, real_rewards):
@@ -23,19 +30,35 @@ class RealArm(Arm):
             return None
         self.rewards_index += 1
         return self.real_rewards[self.rewards_index]
-    
+
+def processing_data(armid, df1, metricid2dimen):
+    d0 = str(armid)
+    d1 = df1.groupby('uin').apply(lambda x: aggregate_numerator(x, metricid2dimen))
+    d2 = 0
+    return [d0, d1, d2]
+pool_res = []
+
 class RealArms():
-    def __init__(self, fname, reward_type) -> None:
-        self.fname = fname
+    def __init__(self, meta_id, reward_type) -> None:
+        self.meta_id = meta_id
         self.reward_type = reward_type
 
+        if meta_id >= len(expt_metadatas):
+            raise ValueError("Invalid meta_id")
+        expt_meta = expt_metadatas[meta_id]
+        data = pd.read_csv(os.path.join("real_data", expt_meta['filename']))
+        # data['metric'] = data['numerator'] / data['denominator']
+        # tmp = data.groupby(['metric_id', 'groupid']).agg({'metric': ['mean', 'std', pop_std, 'min', 'median', 'max'], 'uin': ['count', 'nunique']})
+        # print(tmp)
+        data = data[((data['metric_id'].isin(expt_meta['include_metric_ids'])) & (data['groupname'].isin(expt_meta['include_group_names'])))]
+
         print("Loading data...")
-        self.df = pd.read_csv(self.fname)
+        self.df = data
         print("Data loaded.")
         self.df['numerator'] = self.df['numerator'] / self.df['denominator'].where(self.df['denominator'] != 0, 1)
         tmp = self.df.groupby(['exptid', 'groupid']).count().reset_index()
         gids, gid2uv = [], {}
-        for i, row in tmp.iterrows(): 
+        for i, row in tmp.iterrows():
             gids.append(row['groupid'])
             gid2uv[str(row['groupid'])] = row['uin']
         sgids = sorted(gids)
@@ -45,32 +68,40 @@ class RealArms():
         armid2gids["0"] = control_gids
         for i, gid in enumerate(treat_gids):
             armid2gids[str(i + 1)] = [gid]
-        
+
         gid2armid = dict()
         for gid in control_gids:
                 gid2armid[str(gid)] = 0
         for i, gid in enumerate(sorted(treat_gids)):
                 gid2armid[str(gid)] = i + 1
-        
+
         self.num_arm = 1 + len(treat_gids)
         self.df["armid"] = self.df['groupid'].apply(
                 lambda x: gid2armid[str(x)])
-        
+
         unique_metric_ids = self.df['metric_id'].unique()
         metricid2dimen = {id: position for position, id in enumerate(unique_metric_ids)}
-        
+
+        print("data_processing...")
         armid2df, armid2nextidx = dict(), dict()
-        with tqdm(total = self.num_arm) as pbar:
-            pbar.set_description('Data Processing:')
-            for armid, df1 in self.df.groupby("armid"):
-                armid2df[str(armid)] = df1.groupby('uin').apply(lambda x: aggregate_numerator(x, metricid2dimen))
-                armid2nextidx[str(armid)] = 0
-                pbar.update(1)
+        pool = Pool(processes=16)
+        for armid, df1 in self.df.groupby("armid"):
+            tmp = pool.apply_async(processing_data, args=(armid, df1, metricid2dimen))
+            pool_res.append(tmp)
+        pool.close()
+        pool.join()
+
+        for item in pool_res:
+            d0, d1, d2 = item.get()
+            armid2df[d0] = d1
+            armid2nextidx[d0] = d2
+        # armid2df[str(armid)] = df1.groupby('uin').apply(lambda x: aggregate_numerator(x, metricid2dimen))
+        # armid2nextidx[str(armid)] = 0
 
         armid2mean, armid2var, armid2cnt = dict(), dict(), dict()
         for armid, df in armid2df.items():
             armid2cnt[armid] = df['numerator'].count()
-        self.mincnt = min(armid2cnt.values()) 
+        self.mincnt = min(armid2cnt.values())
 
         control_mean = np.mean(armid2df["0"]["numerator"][0:self.mincnt].tolist(), axis=0)
         self.num_dimension = len(control_mean)
@@ -108,9 +139,9 @@ class RealArms():
                     gaps.append(abs(self.means[i] - self.means[j]))
             self.gap_mean = np.mean(gaps, axis=0)
             self.gap_var = np.var(gaps, axis=0)
-        
+
         self.arms_rewards = []
-        for arms in armid2df.values(): 
+        for arms in armid2df.values():
             self.arms_rewards.append(np.array(list(arms["numerator"])))
 
     def getarms(self, objectives, total_user_each_arm):
@@ -125,6 +156,3 @@ class RealArms():
             for i in range(self.num_arm):
                 arms.append(RealArm(i, self.reward_type, self.num_dimension, self.means[i], self.vars[i], self.arms_rewards[i][indices, :]))
             return arms
-
-
-    
