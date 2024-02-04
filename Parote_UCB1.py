@@ -15,11 +15,13 @@ def get_UCB_Pareto_Optimal_Set(num_d,num_k,arm_set):
             l = 0
             while optimal and l<num_k:
                 if np.min(mu[l]-mu[i]) >= 0 and l!=i:
-                    optimal = False
-                    break
+                    if not (mu[l]-mu[i] == 0).all():
+                        optimal = False
+                        break
                 l += 1
             if optimal:
                 Pareto_set.append(i)
 
     return Pareto_set
+        
         
