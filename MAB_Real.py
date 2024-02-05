@@ -15,7 +15,7 @@ if __name__ == "__main__":
     parse.add_argument('--Delta_min', default = 0.05, type=float)
 
     parse.add_argument('--reward_type', default = 'gauss', type=str)
-    parse.add_argument('--total_user_each_arm', default = 2000, type=int)
+    parse.add_argument('--total_user_each_arm', default = 20000, type=int)
 
     parse.add_argument('--Exp', default='AB', type=str) # AA, AB
 
@@ -57,9 +57,9 @@ if __name__ == "__main__":
             parse.set_defaults(num_epoch = 20)
             if algo == 'PSI':
                 parse.set_defaults(num_epoch = 100)
-            Run_Real(parse.parse_args(), arms)
-            # tmp = pool.apply_async(Run_Real, args=(parse.parse_args(), arms))
+            # Run_Real(parse.parse_args(), arms)
+            tmp = pool.apply_async(Run_Real, args=(parse.parse_args(), arms))
 
-    # pool.close()
-    # pool.join()
+    pool.close()
+    pool.join()
             # Run_Real(parse.parse_args(), arms)

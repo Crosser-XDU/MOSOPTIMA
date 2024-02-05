@@ -6,7 +6,7 @@ from Parote import *
 
 class Environment():
     def __init__(self, Delta_min,bayesian_mean,bayesian_variance,arms,num_user,final_epoch,stop_rule,use_sf,scalarization_function):
-        
+
         self.K = len(arms)
         self.D = bayesian_mean.shape[0]
 
@@ -14,7 +14,7 @@ class Environment():
         self.num_user = num_user
         self.arms = arms
         self.stop_rule = stop_rule
-        self.final_epoch = final_epoch 
+        self.final_epoch = final_epoch
         self.use_sf = use_sf
         self.bayesian_mean = bayesian_mean
         self.bayesian_variance = bayesian_variance
@@ -23,13 +23,13 @@ class Environment():
             self.scalarization_function = scalarization_function
             self.bayesian_mean = float(self.bayesian_mean @ scalarization_function.T)
             self.bayesian_variance = float(self.bayesian_variance @ (scalarization_function.T)**2)
-        
+
         self.num_f = self.scalarization_function.shape[0] if self.use_sf else 0
         self.Delta_min = Delta_min
 
         self.opt = -1
         self.Return_type = -1
-        
+
         self.SPRT_likelihood_prior_ratio = norm.cdf(0, loc=self.bayesian_mean, scale=np.sqrt(self.bayesian_variance)) / (1 - norm.cdf(self.Delta_min, loc=self.bayesian_mean, scale=np.sqrt(self.bayesian_variance)))
 
     def generate_likelihood_data(self, final_chosen_prob,current_epoch,arms,A,Delta,arm_i = -1,times = -1):
@@ -64,9 +64,9 @@ class Environment():
                 regret_epoch += Delta[arm_i]
                 new_reward_list = arms[arm_i].get_reward().tolist()
                 self.arms[arm_i].rewards.append(new_reward_list)
-            
+
         return regret_epoch
-    
+
     def SPRT(self,alpha,beta,Flag,Flag_set,real_variance,test_type,current_epoch):
 
         post_mean = np.array([np.mean(self.arms[arm].rewards, axis=0) for arm in range(self.K)])
@@ -75,7 +75,7 @@ class Environment():
         sub_beta = beta / (self.K*(self.K-1)*self.D)
         sub_alpha = alpha / (self.K*(self.K-1))
         threshold_a, threshold_b = sub_beta / (1-sub_alpha), (1-sub_beta) / (sub_alpha)
-       
+
         # Create a matrix of mean differences and total variances
         mean_dif = post_mean[:, None] - post_mean[None, :]
         total_var = post_var[:, None] + post_var[None, :]
@@ -97,7 +97,7 @@ class Environment():
         min_judge = (LogLikelihood <= threshold_a).astype(int)
 
         Flag_set = (max_judge - np.logical_not(np.logical_xor(max_judge,min_judge).astype(int)))
- 
+
         #update the Flag matrix
         for arm_i in range(self.K - 1):
             for arm_j in range(arm_i + 1, self.K):
@@ -113,14 +113,14 @@ class Environment():
                     Flag[arm_j][arm_i] = 1
                 elif((True in (Flag_set[arm_j][arm_i][np.where(Flag_set[arm_i][arm_j]== 1)[0]] == 0)) and (True in (Flag_set[arm_j][arm_i][np.where(Flag_set[arm_i][arm_j]== 0)[0]] == 1))):
                     Flag[arm_i][arm_j] = 0
-                    Flag[arm_j][arm_i] = 0 
+                    Flag[arm_j][arm_i] = 0
                 elif((Flag_set[arm_i][arm_j]).min() == -1 or (Flag_set[arm_j][arm_i]).min() == -1):
                     Flag[arm_i][arm_j] = -1
-                    Flag[arm_j][arm_i] = -1     
+                    Flag[arm_j][arm_i] = -1
                 else:
                     Flag[arm_i][arm_j] = Flag_max
                     Flag[arm_j][arm_i] = 1-Flag_max
-        
+
         Return_type = -1
         Find_opt = True
 
@@ -142,7 +142,7 @@ class Environment():
         if test_type == "sequential":
             self.Return_type = Return_type
             self.find_opt = Find_opt
-            
+
         elif test_type == "fixed" and current_epoch == self.final_epoch -1:
             self.Return_type = Return_type
             self.find_opt = Find_opt
@@ -183,7 +183,7 @@ class Environment():
         Flag = (max_judge - np.logical_not(np.logical_xor(max_judge,min_judge).astype(int)))
         Flag[np.diag_indices(self.K)] = -1
 
-        Return_type = -1 
+        Return_type = -1
         Find_opt = False
         Opt = -1
 
@@ -195,7 +195,7 @@ class Environment():
                         if arm_j!=arm_i and Flag[arm_i][arm_j]==0 and Flag[arm_j][arm_i]!=0:
                             find_opt = False
                             break
-                
+
                 if find_opt == True:
                     Return_type = 1
                     Find_opt=True
@@ -207,7 +207,7 @@ class Environment():
                 for arm_j in range(self.K):
                     if arm_i != arm_j:
                         items.append(Flag[arm_i][arm_j])
-            
+
 
         if Return_type != 1 and min(items)>=0:
                 if max(items)<=0:
@@ -219,7 +219,7 @@ class Environment():
             self.Return_type = Return_type
             self.find_opt = Find_opt
             self.opt = Opt
-            
+
         elif test_type == "fixed" and current_epoch==self.final_epoch -1:
             self.Return_type = Return_type
             self.find_opt = Find_opt
@@ -252,7 +252,7 @@ class Environment():
                     break
             if flag:
                 A_1.append(arm_i)
-        
+
         for arm_i in A_1:
             flag = True
             for arm_j in A_1:
@@ -264,7 +264,7 @@ class Environment():
                         break
             if flag:
                 P_1.append(arm_i)
-        
+
         for arm_j in P_1:
             flag = True
             for arm_i in np.setdiff1d(A_1, P_1):
@@ -282,7 +282,7 @@ class Environment():
         return A,P
 
     def T_test(self, real_variance, current_epoch, test_type):
-        # multi-arm 
+        # multi-arm
         Flag = -np.ones((self.K,self.K))#ndarray
         if current_epoch == self.final_epoch-1:
 
@@ -311,10 +311,10 @@ class Environment():
                             Flag[arm_j][arm_i] = 1
                         elif((0 in Flag_ij) and (1 in Flag_ij)):
                             Flag[arm_i][arm_j] = 0
-                            Flag[arm_j][arm_i] = 0  
+                            Flag[arm_j][arm_i] = 0
                         elif((Flag_ij).min() == -1):
                             Flag[arm_i][arm_j] = -1
-                            Flag[arm_j][arm_i] = -1   
+                            Flag[arm_j][arm_i] = -1
 
 
             Return_type = -1
@@ -327,7 +327,7 @@ class Environment():
                             if Flag[arm_i][arm_j] != 0 or Flag[arm_j][arm_i] != 0:
                                 Find_opt = False
                                 break
-            
+
             if Find_opt == True:
                 if len(Pareto_arm_index) == self.K:
                     Return_type = 0
@@ -337,7 +337,7 @@ class Environment():
             if test_type == "sequential":
                 self.Return_type = Return_type
                 self.find_opt = Find_opt
-                
+
             elif test_type == "fixed" and current_epoch == self.final_epoch -1:
                 self.Return_type = Return_type
                 self.find_opt = Find_opt
@@ -357,7 +357,7 @@ class Environment():
             chosen_prob[arm_i] = 1/len(Active_arm_index) if arm_i in Active_arm_index else 0
 
         return chosen_prob
-    
+
     def compute_UCB_Parote_final_assingment(self):
         Pareto_Optimal_Set = get_UCB_Pareto_Optimal_Set(self.D,self.K,self.arms)
         chosen_prob = [0 for arm in self.arms]
@@ -365,13 +365,21 @@ class Environment():
             chosen_prob[arm_i] = 1/len(Pareto_Optimal_Set) if arm_i in Pareto_Optimal_Set else 0
         return chosen_prob
 
+    # def compute_EG_final_assingment(self, epsilon):
+    #     Pareto_Optimal_Set  = get_Pareto_Optimal_Set(self.arms, Flag = 'EG' )
+    #     chosen_prob = np.asarray([epsilon/self.K for arm in self.arms])
+    #     chosen_prob[Pareto_Optimal_Set] += (1 - epsilon)/len(Pareto_Optimal_Set)
+    #     return chosen_prob
+
     def compute_EG_final_assingment(self, epsilon):
         Pareto_Optimal_Set  = get_Pareto_Optimal_Set(self.arms, Flag = 'EG' )
-        chosen_prob = np.asarray([epsilon/self.K for arm in self.arms])
-        chosen_prob[Pareto_Optimal_Set] += (1 - epsilon)/len(Pareto_Optimal_Set)
-
+        if len(Pareto_Optimal_Set) == 0:
+            chosen_prob = np.asarray([1/self.K for arm in self.arms])
+        else:
+            chosen_prob = np.asarray([epsilon/self.K for arm in self.arms])
+            chosen_prob[Pareto_Optimal_Set] += (1 - epsilon)/len(Pareto_Optimal_Set)
         return chosen_prob
-    
+
     def compute_TS_final_assignment(self, post_mean, post_var ,fixed_ratio,  MC_simulation = 10000 ):
         final_chosen_prob = [0 for arm in self.arms]
         K = post_mean.shape[0]
@@ -381,12 +389,12 @@ class Environment():
         else:
             simulation_results = []
             for arm_id in range(K):
-                    simulation_results.append(np.mean(np.random.normal(loc=post_mean[arm_id], scale=np.sqrt(post_var[arm_id]), size=(MC_simulation, self.D)), axis=0)) 
+                    simulation_results.append(np.mean(np.random.normal(loc=post_mean[arm_id], scale=np.sqrt(post_var[arm_id]), size=(MC_simulation, self.D)), axis=0))
             Pareto_Optimal_Set = get_Pareto_Optimal_Set(simulation_results, Flag = 'TS')
 
-            chosen_prob= [1/len(Pareto_Optimal_Set) if arm_id in Pareto_Optimal_Set else 0 for arm_id in range(K)]        
+            chosen_prob= [1/len(Pareto_Optimal_Set) if arm_id in Pareto_Optimal_Set else 0 for arm_id in range(K)]
             for arm in range(self.K):
                 final_chosen_prob[arm] = chosen_prob[arm]*(1-fixed_ratio)+fixed_ratio/self.K
 
         return final_chosen_prob
-        
+

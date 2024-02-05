@@ -5,6 +5,7 @@ from Environment import *
 from datetime import datetime
 from tqdm import tqdm
 import random
+import pdb
 import math
 def Run_Real(args, arms):
     filename="./Exp_multiArm/"
@@ -92,10 +93,6 @@ def Run_Real(args, arms):
     Delta_Parote = compute_delta_value(A_star, arm_set, sf=scalarization_function, stop_rule=stop_rule)#list
     print("Delta_Parote:", Delta_Parote)
 
-    #initialization for PSI algorithm
-    A = [i for i in range(num_arm)]
-    P = []
-
 
     f.write("Real mean: " + str(mean_set) + "\n")
     f.write("Real variance: " + str(variance_set) + "\n")
@@ -110,6 +107,10 @@ def Run_Real(args, arms):
             Regret = 0
             arm_set = arms.getarms(objectives, total_user_each_arm)
             env = Environment(Delta_min, bayesian_mean, bayesian_variance, arms=arm_set, num_user=num_user, final_epoch=num_epoch, stop_rule=stop_rule, use_sf=use_sf, scalarization_function=scalarization_function)
+
+            #initialization for PSI algorithm
+            A = [i for i in range(num_arm)]
+            P = []
 
             #simulation of searching in the multi-objective space
             if stop_rule != 'esSR':
@@ -230,8 +231,14 @@ def Run_Real(args, arms):
             f.write("\nFind truely optimal:"+str(Find_truely_opts)+"; AcceptH1andFindOpt: "+str(Accept_H1_and_FindOpt)+"; AcceptH0: "+str(Accept_H0)+"; AcceptH1butNotFindOpt: "+str(Accept_H1_butNotOpt))
             f.write("\nSum sample epochs before stop:"+str(sum(sample_epochs)) +"; Sum total sample epochs:"+str(sum(total_sample_epochs))+"; Active Arm:"+str(np.sort(Active_arm_index))+"; Optimal Arm:"+str(A_star))
             if (run+1)%100 == 0:
-                f.write("\nPower="+ str(Find_truely_opts/((run+1))) + "; Averaged Sample size = "+ str(sum(sample_epochs)/Find_truely_opts)+ "; Averaged user observations per arm = "+ str(sum(sample_epochs)*num_user/(Find_truely_opts*num_arm)) + " ;Regret = " + str(sum(Regret_all)/(sum(total_sample_epochs)*num_user)))
-                f.write("\nType I error ratio:"+str(Type_I_error_count / Accept_H1_and_FindOpt)+"; Type II error count:"+str(Type_II_error_count / Accept_H1_and_FindOpt))
+                if Find_truely_opts == 0:
+                    f.write("\nPower="+ str(Find_truely_opts/((run+1))) + "; Averaged Sample size = "+ str(0)+ "; Averaged user observations per arm = "+ str(0) + " ;Regret = " + str(sum(Regret_all)/(sum(total_sample_epochs)*num_user)))
+                else:
+                    f.write("\nPower="+ str(Find_truely_opts/((run+1))) + "; Averaged Sample size = "+ str(sum(sample_epochs)/Find_truely_opts)+ "; Averaged user observations per arm = "+ str(sum(sample_epochs)*num_user/(Find_truely_opts*num_arm)) + " ;Regret = " + str(sum(Regret_all)/(sum(total_sample_epochs)*num_user)))
+                if Accept_H1_and_FindOpt == 0:
+                    f.write("\nType I error ratio:"+str(0)+"; Type II error count:"+str(0))
+                else:
+                    f.write("\nType I error ratio:"+str(Type_I_error_count / Accept_H1_and_FindOpt)+"; Type II error count:"+str(Type_II_error_count / Accept_H1_and_FindOpt))
             pbar.update(1)
             f.flush()
         f.close()
