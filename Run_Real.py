@@ -5,10 +5,10 @@ from Environment import *
 from datetime import datetime
 from tqdm import tqdm
 import random
-import pdb
 import math
-def Run_Real(args, arms):
-    filename="./Exp_multiArm/"
+from real_data.meta_data import expt_metadatas
+
+def __Run_Real(args, arms, f, Accept_H0, Accept_H1_and_FindOpt, Find_truely_opts, Accept_H1_butNotOpt, Type_I_error_count, Type_II_error_count, sample_epochs, total_sample_epochs, Regret_all):
 
     #set parameters
     num_epoch = args.num_epoch
@@ -47,25 +47,6 @@ def Run_Real(args, arms):
         mean_set = arms.means[:, objectives]
     arm_set = arms.getarms(objectives, total_user_each_arm)
 
-    #create file for saving results
-    filename = filename + '_K'+str(num_arm) + '_D'+str(num_d) + '_Reward_type'+reward_type + 'alpha'+str(alpha)+'beta'+str(beta) + '_'+ MAB_alg
-    filename += str(datetime.now())
-    filename = filename.replace(":", "")
-    f = open(filename, "w")
-
-    sample_epochs = [] #save the sample epochs for success simulation
-    total_sample_epochs = [] #save the sample epochs for every simulation
-    Regret_all = [] #save the regret for every simulation
-
-    Accept_H0 = 0
-    Accept_H1_and_FindOpt = 0
-    Find_truely_opts = 0
-    Accept_H1_butNotOpt = 0
-
-    #record the ratio of type I error and type II error
-    Type_I_error_count = 0
-    Type_II_error_count = 0
-
     final_chosen_prob = [1/num_arm for i in range(num_arm)]#list
 
     #initialization of esSR and sf_SPRT algorithm
@@ -98,6 +79,7 @@ def Run_Real(args, arms):
     f.write("Real variance: " + str(variance_set) + "\n")
     f.write("Bayesian mean: " + str(bayesian_mean) + "\n")
     f.write("Bayesian variance: " + str(bayesian_variance) + "\n")
+    f.write("metaid: " + str(arms.meta_id) + "\n")
 
     with tqdm(total=num_run) as pbar:
         pbar.set_description('Simulation:')
@@ -239,6 +221,41 @@ def Run_Real(args, arms):
                     f.write("\nType I error ratio:"+str(0)+"; Type II error count:"+str(0))
                 else:
                     f.write("\nType I error ratio:"+str(Type_I_error_count / Accept_H1_and_FindOpt)+"; Type II error count:"+str(Type_II_error_count / Accept_H1_and_FindOpt))
-            pbar.update(1)
             f.flush()
-        f.close()
+    return Accept_H0, Accept_H1_and_FindOpt, Find_truely_opts, Accept_H1_butNotOpt, Type_I_error_count, Type_II_error_count, sample_epochs, total_sample_epochs, Regret_all
+
+def Run_Real(args):
+    filename="./Exp_multiArm/"
+    #create file for saving results
+    filename = filename + '_stop_rule_'+str(args.stop_rule) + '_mab_alg_'+str(args.MAB_alg) + 'alpha'+str(args.alpha)+'beta'+str(args.beta)
+    filename += str(datetime.now())
+    filename = filename.replace(":", "")
+    f = open(filename, "w")
+
+    Accept_H0 = 0
+    Accept_H1_and_FindOpt = 0
+    Find_truely_opts = 0
+    Accept_H1_butNotOpt = 0
+
+    #record the ratio of type I error and type II error
+    Type_I_error_count = 0
+    Type_II_error_count = 0
+
+    sample_epochs = [] #save the sample epochs for success simulation
+    total_sample_epochs = [] #save the sample epochs for every simulation
+    Regret_all = [] #save the regret for every simulation
+
+
+    for meta_id, meta_data in enumerate(expt_metadatas):
+        print("meta_id: ", meta_id)
+        arms = RealArms(meta_id, "gauss")
+        print("arms initialized.")
+        Accept_H0, Accept_H1_and_FindOpt, Find_truely_opts, Accept_H1_butNotOpt, Type_I_error_count, Type_II_error_count, sample_epochs, total_sample_epochs, Regret_all= __Run_Real(
+                args, arms, f, Accept_H0, Accept_H1_and_FindOpt, Find_truely_opts, Accept_H1_butNotOpt, Type_I_error_count, Type_II_error_count, sample_epochs, total_sample_epochs, Regret_all)
+        f.write("===============================================================")
+        f.write("Accept_H0" + str(Accept_H0) + "Accept_H1_and_FindOpt" + str(Accept_H1_and_FindOpt) + "Find_truely_opts" + str(Find_truely_opts) + "Accept_H1_butNotOpt" + str(Accept_H1_butNotOpt))
+        f.write("Type_I_error_count" + str(Type_I_error_count) + "Type_II_error_count" + str(Type_II_error_count))
+        f.write("sample_epochs" + str(sample_epochs) + "total_sample_epochs" + str(total_sample_epochs) + "Regret_all" + str(Regret_all))
+        f.write("===============================================================")
+
+    f.close()

@@ -1,5 +1,4 @@
-real_data/expt_detail_*.csv
-Exp_multiArm/*
+real_data/expt_detail*
 __pycache__/*
 */__pycache__/*
 */.ipynb*

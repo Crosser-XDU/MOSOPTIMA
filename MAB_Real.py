@@ -10,12 +10,12 @@ if __name__ == "__main__":
     parse = argparse.ArgumentParser(description='Parameters')
     parse.add_argument('--num_epoch', default = 20, type=int)
     parse.add_argument('--version', default = 'batch', type=str)
-    parse.add_argument('--num_run', default=100, type=int)
+    parse.add_argument('--num_run', default=10, type=int)
 
     parse.add_argument('--Delta_min', default = 0.05, type=float)
 
     parse.add_argument('--reward_type', default = 'gauss', type=str)
-    parse.add_argument('--total_user_each_arm', default = 20000, type=int)
+    parse.add_argument('--total_user_each_arm', default = 10000, type=int)
 
     parse.add_argument('--Exp', default='AB', type=str) # AA, AB
 
@@ -29,7 +29,7 @@ if __name__ == "__main__":
     parse.add_argument('--beta', default = 0.5, type=float)
 
     # parse.add_argument('--fname', default = 'test_real_data.csv', type=str)
-    parse.add_argument('--meta_id', default = 0, type=int)
+    # parse.add_argument('--meta_id', default = 0, type=int)
 
     parse.add_argument('--objectives', default = None, type=list)
 
@@ -41,25 +41,28 @@ if __name__ == "__main__":
     #sf_SPRT_algo = ['Elimination']
     Algorithm = [Eli_algo, T_test_algo, PSI_algo, esSR_algo]
 
-    meta_id = parse.parse_args().meta_id
+    # meta_id = parse.parse_args().meta_id
     reward_type = parse.parse_args().reward_type
     objectives = parse.parse_args().objectives
-    arms = RealArms(meta_id=meta_id, reward_type=reward_type)
+    # arms = RealArms(meta_id=meta_id, reward_type=reward_type)
 
-    pool = Pool(processes=num_process)
+    Run_Real(parse.parse_args())
 
-    for stop_rule_index in range(len(stop_rule)):
-        parse.set_defaults(stop_rule = stop_rule[stop_rule_index])
-        print("Stop Rule: ", stop_rule[stop_rule_index])
-        for algo in Algorithm[stop_rule_index]:
-            print("Algorithm: ", algo)
-            parse.set_defaults(MAB_alg = algo)
-            parse.set_defaults(num_epoch = 20)
-            if algo == 'PSI':
-                parse.set_defaults(num_epoch = 100)
-            # Run_Real(parse.parse_args(), arms)
-            tmp = pool.apply_async(Run_Real, args=(parse.parse_args(), arms))
+    # pool = Pool(processes=8)
 
-    pool.close()
-    pool.join()
+    # for stop_rule_index in range(len(stop_rule)):
+    #     parse.set_defaults(stop_rule = stop_rule[stop_rule_index])
+    #     print("Stop Rule: ", stop_rule[stop_rule_index])
+    #     for algo in Algorithm[stop_rule_index]:
+    #         print("Algorithm: ", algo)
+    #         parse.set_defaults(MAB_alg = algo)
+    #         parse.set_defaults(num_epoch = 20)
+    #         if algo == 'PSI':
+    #             parse.set_defaults(num_epoch = 100)
+    #         # Run_Real(parse.parse_args())
+    #         # tmp = pool.apply_async(Run_Real, args=(parse.parse_args(), arms))
+    #         tmp = pool.apply_async(Run_Real, args=(parse.parse_args(),))
+
+    # pool.close()
+    # pool.join()
             # Run_Real(parse.parse_args(), arms)

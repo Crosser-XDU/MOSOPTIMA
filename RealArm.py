@@ -36,7 +36,6 @@ def processing_data(armid, df1, metricid2dimen):
     d1 = df1.groupby('uin').apply(lambda x: aggregate_numerator(x, metricid2dimen))
     d2 = 0
     return [d0, d1, d2]
-pool_res = []
 
 class RealArms():
     def __init__(self, meta_id, reward_type) -> None:
@@ -46,11 +45,11 @@ class RealArms():
         if meta_id >= len(expt_metadatas):
             raise ValueError("Invalid meta_id")
         expt_meta = expt_metadatas[meta_id]
-        data = pd.read_csv(os.path.join("real_data", expt_meta['filename']))
+        data = pd.read_csv(os.path.join("real_data/expt_details_clean", "metaid_" + str(expt_meta["id"]) + ".csv"))
         # data['metric'] = data['numerator'] / data['denominator']
         # tmp = data.groupby(['metric_id', 'groupid']).agg({'metric': ['mean', 'std', pop_std, 'min', 'median', 'max'], 'uin': ['count', 'nunique']})
         # print(tmp)
-        data = data[((data['metric_id'].isin(expt_meta['include_metric_ids'])) & (data['groupname'].isin(expt_meta['include_group_names'])))]
+        # data = data[((data['metric_id'].isin(expt_meta['include_metric_ids'])) & (data['groupname'].isin(expt_meta['include_group_names'])))]
 
         print("Loading data...")
         self.df = data
@@ -84,17 +83,22 @@ class RealArms():
 
         print("data_processing...")
         armid2df, armid2nextidx = dict(), dict()
+        # for armid, df1 in self.df.groupby("armid"):
+        #     print(armid, len(df1))
+        #     armid2df[str(armid)] = df1.groupby('uin').apply(lambda x: aggregate_numerator(x, metricid2dimen))
+        #     armid2nextidx[str(armid)] = 0
         pool = Pool(processes=16)
+        pool_res = []
         for armid, df1 in self.df.groupby("armid"):
             tmp = pool.apply_async(processing_data, args=(armid, df1, metricid2dimen))
             pool_res.append(tmp)
         pool.close()
         pool.join()
-
         for item in pool_res:
             d0, d1, d2 = item.get()
             armid2df[d0] = d1
             armid2nextidx[d0] = d2
+        print("processing done")
         # armid2df[str(armid)] = df1.groupby('uin').apply(lambda x: aggregate_numerator(x, metricid2dimen))
         # armid2nextidx[str(armid)] = 0
 
